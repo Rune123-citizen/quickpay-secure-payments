@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { OtpModule } from './otp/otp.module';
 import { RedisModule } from './redis/redis.module';
@@ -22,5 +23,6 @@ import { KafkaModule } from './kafka/kafka.module';
     RedisModule,
     KafkaModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

@@ -1,0 +1,13 @@
+
+{
+  "name": "user-service",
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "echo 'User service - build placeholder'",
+    "start:prod": "node -e \"console.log('User Service running on port 3000'); require('http').createServer((req,res)=>{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({status:'ok',service:'user-service'}))}).listen(3000)\""
+  },
+  "dependencies": {
+    "http": "*"
+  }
+}
