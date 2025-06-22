@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiService, AuthResponse } from '@/services/api';
 import { toast } from '@/hooks/use-toast';
@@ -49,11 +48,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem('accessToken');
+      console.log('Initializing auth, token exists:', !!token);
+      
       if (token) {
         const response = await apiService.getProfile();
         if (response.data) {
           setUser(response.data);
+          console.log('User profile loaded:', response.data);
         } else {
+          console.log('Failed to load profile, clearing tokens');
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
         }
@@ -65,8 +68,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    console.log('Attempting login for:', email);
     setIsLoading(true);
+    
     const response = await apiService.login({ email, password });
+    console.log('Login response:', response);
     
     if (response.data) {
       localStorage.setItem('accessToken', response.data.accessToken);
@@ -79,6 +85,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsLoading(false);
       return true;
     } else {
+      console.error('Login failed:', response.error);
       toast({
         title: "Login failed",
         description: response.error || "Please check your credentials",
@@ -96,8 +103,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     lastName: string;
     phoneNumber: string;
   }): Promise<boolean> => {
+    console.log('Attempting registration for:', userData.email);
     setIsLoading(true);
+    
     const response = await apiService.register(userData);
+    console.log('Registration response:', response);
     
     if (response.data) {
       localStorage.setItem('accessToken', response.data.accessToken);
@@ -110,9 +120,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsLoading(false);
       return true;
     } else {
+      console.error('Registration failed:', response.error);
       toast({
         title: "Registration failed",
-        description: response.error || "Please try again",
+        description: response.error || "Please try again. Make sure backend services are running.",
         variant: "destructive",
       });
       setIsLoading(false);
@@ -121,6 +132,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const logout = async () => {
+    console.log('Logging out user');
     await apiService.logout();
     setUser(null);
     toast({

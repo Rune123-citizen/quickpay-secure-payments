@@ -1,5 +1,4 @@
-
-const API_BASE_URL = 'http://localhost:8080/api'; // API Gateway URL
+const API_BASE_URL = 'http://localhost:3001/api'; // Auth service URL
 
 export interface ApiResponse<T> {
   data?: T;
@@ -78,22 +77,70 @@ class ApiService {
 
       return { data };
     } catch (error) {
+      console.error('API request failed:', error);
       return { error: 'Network error occurred' };
     }
   }
 
-  // Auth Service
+  // Auth Service - Updated endpoints to match NestJS auth service
   async login(credentials: LoginRequest): Promise<ApiResponse<AuthResponse>> {
-    return this.request<AuthResponse>('/auth/login', {
+    // For now, using OTP-based auth as per the backend implementation
+    // First send OTP
+    const otpResponse = await this.request<any>('/auth/send-otp', {
       method: 'POST',
-      body: JSON.stringify(credentials),
+      body: JSON.stringify({ phoneNumber: credentials.email }), // Using email as phone for demo
+    });
+
+    if (otpResponse.error) {
+      return otpResponse;
+    }
+
+    // For demo purposes, simulate OTP verification
+    // In real implementation, user would enter OTP
+    const mockOtp = '123456';
+    return this.request<AuthResponse>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        phoneNumber: credentials.email,
+        otp: mockOtp 
+      }),
     });
   }
 
   async register(userData: RegisterRequest): Promise<ApiResponse<AuthResponse>> {
-    return this.request<AuthResponse>('/auth/register', {
+    // Create user via user service first
+    const userResponse = await this.request<any>('/users', {
       method: 'POST',
-      body: JSON.stringify(userData),
+      body: JSON.stringify({
+        phoneNumber: userData.phoneNumber,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+      }),
+    });
+
+    if (userResponse.error) {
+      return userResponse;
+    }
+
+    // Then authenticate using phone number
+    const otpResponse = await this.request<any>('/auth/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber: userData.phoneNumber }),
+    });
+
+    if (otpResponse.error) {
+      return otpResponse;
+    }
+
+    // For demo purposes, simulate OTP verification
+    const mockOtp = '123456';
+    return this.request<AuthResponse>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        phoneNumber: userData.phoneNumber,
+        otp: mockOtp 
+      }),
     });
   }
 
@@ -109,21 +156,29 @@ class ApiService {
     return this.request<any>('/users/profile');
   }
 
-  // Balance Service
+  // Balance Service - Different port
   async getBalance(): Promise<ApiResponse<Balance>> {
-    return this.request<Balance>('/balance');
+    return fetch('http://localhost:3005/api/v1/balance', {
+      headers: { ...this.getAuthHeaders() }
+    }).then(res => res.json()).catch(() => ({ error: 'Balance service unavailable' }));
   }
 
   async addMoney(amount: number): Promise<ApiResponse<any>> {
-    return this.request<any>('/balance/load', {
+    return fetch('http://localhost:3005/api/v1/balance/load', {
       method: 'POST',
-      body: JSON.stringify({ amount }),
-    });
+      headers: { 
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders() 
+      },
+      body: JSON.stringify({ amount })
+    }).then(res => res.json()).catch(() => ({ error: 'Balance service unavailable' }));
   }
 
-  // Transaction Service
+  // Transaction Service - Different port
   async getTransactions(): Promise<ApiResponse<Transaction[]>> {
-    return this.request<Transaction[]>('/transactions');
+    return fetch('http://localhost:3003/api/v1/transactions', {
+      headers: { ...this.getAuthHeaders() }
+    }).then(res => res.json()).catch(() => ({ error: 'Transaction service unavailable' }));
   }
 
   async sendMoney(data: {
@@ -131,10 +186,14 @@ class ApiService {
     vpa: string;
     description: string;
   }): Promise<ApiResponse<Transaction>> {
-    return this.request<Transaction>('/transactions/upi', {
+    return fetch('http://localhost:3003/api/v1/transactions/upi', {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      headers: { 
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders() 
+      },
+      body: JSON.stringify(data)
+    }).then(res => res.json()).catch(() => ({ error: 'Transaction service unavailable' }));
   }
 
   async p2pTransfer(data: {
@@ -142,25 +201,31 @@ class ApiService {
     toUserId: string;
     description: string;
   }): Promise<ApiResponse<Transaction>> {
-    return this.request<Transaction>('/transactions/p2p', {
+    return fetch('http://localhost:3003/api/v1/transactions/p2p', {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      headers: { 
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders() 
+      },
+      body: JSON.stringify(data)
+    }).then(res => res.json()).catch(() => ({ error: 'Transaction service unavailable' }));
   }
 
   // Notification Service
   async sendOTP(phoneNumber: string): Promise<ApiResponse<any>> {
-    return this.request<any>('/notifications/otp/send', {
+    return fetch('http://localhost:3004/api/otp/send', {
       method: 'POST',
-      body: JSON.stringify({ phoneNumber }),
-    });
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber })
+    }).then(res => res.json()).catch(() => ({ error: 'Notification service unavailable' }));
   }
 
   async verifyOTP(phoneNumber: string, otp: string): Promise<ApiResponse<any>> {
-    return this.request<any>('/notifications/otp/verify', {
+    return fetch('http://localhost:3004/api/otp/verify', {
       method: 'POST',
-      body: JSON.stringify({ phoneNumber, otp }),
-    });
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber, otp })
+    }).then(res => res.json()).catch(() => ({ error: 'Notification service unavailable' }));
   }
 }
 
