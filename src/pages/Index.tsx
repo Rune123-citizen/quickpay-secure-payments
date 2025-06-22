@@ -2,34 +2,32 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   CreditCard, 
   QrCode, 
   Phone, 
   User, 
-  Eye,
-  EyeOff,
   ArrowRight,
   Home,
   Bell,
   Settings,
   Search,
-  Plus
+  Plus,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import AuthModal from "@/components/AuthModal";
 import PaymentSection from "@/components/PaymentSection";
 import TransactionHistory from "@/components/TransactionHistory";
 import BalanceCard from "@/components/BalanceCard";
 
 const Index = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, user, logout } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
 
   const handleAuth = () => {
-    setIsAuthenticated(true);
     setShowAuthModal(false);
   };
 
@@ -171,11 +169,17 @@ const Index = () => {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                Welcome, {user?.firstName}!
+              </span>
               <Button variant="ghost" size="sm">
                 <Bell className="w-5 h-5" />
               </Button>
               <Button variant="ghost" size="sm">
                 <Settings className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={logout}>
+                <LogOut className="w-5 h-5" />
               </Button>
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                 <User className="w-5 h-5 text-white" />

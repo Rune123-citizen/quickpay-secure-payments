@@ -4,8 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Phone, ArrowRight, Shield, Lock } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Eye, EyeOff, Phone, Mail, User } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -14,210 +15,226 @@ interface AuthModalProps {
 }
 
 const AuthModal = ({ isOpen, onClose, onAuth }: AuthModalProps) => {
-  const [step, setStep] = useState<"phone" | "otp" | "pin">("phone");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [otp, setOtp] = useState("");
-  const [upiPin, setUpiPin] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { login, register, isLoading } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
 
-  const handleSendOTP = async () => {
-    if (phoneNumber.length !== 10) {
-      toast({
-        title: "Invalid Phone Number",
-        description: "Please enter a valid 10-digit phone number",
-        variant: "destructive"
-      });
-      return;
-    }
+  // Login form state
+  const [loginData, setLoginData] = useState({
+    email: "",
+    password: "",
+  });
 
-    setLoading(true);
-    // Simulate OTP sending
-    setTimeout(() => {
-      toast({
-        title: "OTP Sent",
-        description: `Verification code sent to +91 ${phoneNumber}`,
-      });
-      setStep("otp");
-      setLoading(false);
-    }, 1500);
-  };
+  // Register form state
+  const [registerData, setRegisterData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+    password: "",
+    confirmPassword: "",
+  });
 
-  const handleVerifyOTP = async () => {
-    if (otp.length !== 6) {
-      toast({
-        title: "Invalid OTP",
-        description: "Please enter the 6-digit OTP",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setLoading(true);
-    // Simulate OTP verification
-    setTimeout(() => {
-      toast({
-        title: "OTP Verified",
-        description: "Phone number verified successfully",
-      });
-      setStep("pin");
-      setLoading(false);
-    }, 1000);
-  };
-
-  const handleSetupPin = async () => {
-    if (upiPin.length !== 4) {
-      toast({
-        title: "Invalid PIN",
-        description: "UPI PIN must be 4 digits",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setLoading(true);
-    // Simulate PIN setup
-    setTimeout(() => {
-      toast({
-        title: "Welcome to PayFlow!",
-        description: "Your account has been set up successfully",
-      });
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const success = await login(loginData.email, loginData.password);
+    if (success) {
       onAuth();
-      setLoading(false);
-    }, 1500);
+      onClose();
+    }
   };
 
-  const renderPhoneStep = () => (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Phone className="w-8 h-8 text-white" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Welcome to PayFlow</h2>
-        <p className="text-gray-600">Enter your mobile number to get started</p>
-      </div>
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (registerData.password !== registerData.confirmPassword) {
+      return;
+    }
 
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="phone">Mobile Number</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">+91</span>
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="Enter your mobile number"
-              className="pl-12"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-            />
-          </div>
-        </div>
-
-        <Button
-          onClick={handleSendOTP}
-          disabled={loading || phoneNumber.length !== 10}
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-        >
-          {loading ? "Sending OTP..." : "Send OTP"}
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="text-center text-sm text-gray-500">
-        By continuing, you agree to our Terms & Privacy Policy
-      </div>
-    </div>
-  );
-
-  const renderOTPStep = () => (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Shield className="w-8 h-8 text-white" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Verify Your Number</h2>
-        <p className="text-gray-600">Enter the 6-digit code sent to +91 {phoneNumber}</p>
-      </div>
-
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="otp">OTP Code</Label>
-          <Input
-            id="otp"
-            type="text"
-            placeholder="Enter 6-digit OTP"
-            className="text-center text-2xl tracking-widest"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          />
-        </div>
-
-        <Button
-          onClick={handleVerifyOTP}
-          disabled={loading || otp.length !== 6}
-          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-        >
-          {loading ? "Verifying..." : "Verify OTP"}
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-
-        <Button variant="ghost" className="w-full" onClick={() => setStep("phone")}>
-          Change Number
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderPinStep = () => (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Lock className="w-8 h-8 text-white" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Setup UPI PIN</h2>
-        <p className="text-gray-600">Create a 4-digit PIN to secure your transactions</p>
-      </div>
-
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="pin">UPI PIN</Label>
-          <Input
-            id="pin"
-            type="password"
-            placeholder="Enter 4-digit PIN"
-            className="text-center text-2xl tracking-widest"
-            value={upiPin}
-            onChange={(e) => setUpiPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-          />
-        </div>
-
-        <Button
-          onClick={handleSetupPin}
-          disabled={loading || upiPin.length !== 4}
-          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-        >
-          {loading ? "Setting up..." : "Setup PIN & Continue"}
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <p className="text-sm text-yellow-800">
-          <strong>Security Tip:</strong> Never share your UPI PIN with anyone. PayFlow will never ask for your PIN via call or SMS.
-        </p>
-      </div>
-    </div>
-  );
+    const success = await register({
+      firstName: registerData.firstName,
+      lastName: registerData.lastName,
+      email: registerData.email,
+      phoneNumber: registerData.phoneNumber,
+      password: registerData.password,
+    });
+    
+    if (success) {
+      onAuth();
+      onClose();
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="sr-only">Authentication</DialogTitle>
+          <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Welcome to PayFlow
+          </DialogTitle>
         </DialogHeader>
-        
-        {step === "phone" && renderPhoneStep()}
-        {step === "otp" && renderOTPStep()}
-        {step === "pin" && renderPinStep()}
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="login">Login</TabsTrigger>
+            <TabsTrigger value="register">Register</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="login">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={loginData.email}
+                    onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={loginData.password}
+                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                    className="pr-10"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="register">
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="firstName"
+                      placeholder="First name"
+                      value={registerData.firstName}
+                      onChange={(e) => setRegisterData({ ...registerData, firstName: e.target.value })}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    placeholder="Last name"
+                    value={registerData.lastName}
+                    onChange={(e) => setRegisterData({ ...registerData, lastName: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="registerEmail">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="registerEmail"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={registerData.email}
+                    onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="phoneNumber"
+                    type="tel"
+                    placeholder="Enter your phone number"
+                    value={registerData.phoneNumber}
+                    onChange={(e) => setRegisterData({ ...registerData, phoneNumber: e.target.value })}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="registerPassword">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="registerPassword"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a password"
+                    value={registerData.password}
+                    onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                    className="pr-10"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={registerData.confirmPassword}
+                  onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                  required
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading || registerData.password !== registerData.confirmPassword}
+              >
+                {isLoading ? "Creating account..." : "Create Account"}
+              </Button>
+            </form>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
