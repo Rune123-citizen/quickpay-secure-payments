@@ -1,4 +1,9 @@
-const API_BASE_URL = 'http://localhost:3001/api'; // Auth service URL
+// Define base URLs for each microservice
+const AUTH_SERVICE_URL = 'http://localhost:3001/api';
+const USER_SERVICE_URL = 'http://localhost:3002/api';
+const TRANSACTION_SERVICE_URL = 'http://localhost:3003/api/v1';
+const NOTIFICATION_SERVICE_URL = 'http://localhost:3004/api';
+const BALANCE_SERVICE_URL = 'http://localhost:3005/api/v1';
 
 export interface ApiResponse<T> {
   data?: T;
@@ -58,9 +63,9 @@ class ApiService {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+  private async request<T>(baseUrl: string, endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
           ...this.getAuthHeaders(),
@@ -86,7 +91,7 @@ class ApiService {
   async login(credentials: LoginRequest): Promise<ApiResponse<AuthResponse>> {
     // For now, using OTP-based auth as per the backend implementation
     // First send OTP
-    const otpResponse = await this.request<any>('/auth/send-otp', {
+    const otpResponse = await this.request<any>(AUTH_SERVICE_URL, '/auth/send-otp', {
       method: 'POST',
       body: JSON.stringify({ phoneNumber: credentials.email }), // Using email as phone for demo
     });
@@ -98,7 +103,7 @@ class ApiService {
     // For demo purposes, simulate OTP verification
     // In real implementation, user would enter OTP
     const mockOtp = '123456';
-    return this.request<AuthResponse>('/auth/verify-otp', {
+    return this.request<AuthResponse>(AUTH_SERVICE_URL, '/auth/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ 
         phoneNumber: credentials.email,
@@ -109,7 +114,7 @@ class ApiService {
 
   async register(userData: RegisterRequest): Promise<ApiResponse<AuthResponse>> {
     // Create user via user service first
-    const userResponse = await this.request<any>('/users', {
+    const userResponse = await this.request<any>(USER_SERVICE_URL, '/users', {
       method: 'POST',
       body: JSON.stringify({
         phoneNumber: userData.phoneNumber,
@@ -124,7 +129,7 @@ class ApiService {
     }
 
     // Then authenticate using phone number
-    const otpResponse = await this.request<any>('/auth/send-otp', {
+    const otpResponse = await this.request<any>(AUTH_SERVICE_URL, '/auth/send-otp', {
       method: 'POST',
       body: JSON.stringify({ phoneNumber: userData.phoneNumber }),
     });
@@ -135,7 +140,7 @@ class ApiService {
 
     // For demo purposes, simulate OTP verification
     const mockOtp = '123456';
-    return this.request<AuthResponse>('/auth/verify-otp', {
+    return this.request<AuthResponse>(AUTH_SERVICE_URL, '/auth/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ 
         phoneNumber: userData.phoneNumber,
@@ -145,7 +150,7 @@ class ApiService {
   }
 
   async logout(): Promise<ApiResponse<void>> {
-    const result = await this.request<void>('/auth/logout', { method: 'POST' });
+    const result = await this.request<void>(AUTH_SERVICE_URL, '/auth/logout', { method: 'POST' });
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     return result;
@@ -153,32 +158,27 @@ class ApiService {
 
   // User Service
   async getProfile(): Promise<ApiResponse<any>> {
-    return this.request<any>('/users/profile');
+    return this.request<any>(USER_SERVICE_URL, '/users/profile');
   }
 
-  // Balance Service - Different port
+  // Balance Service
   async getBalance(): Promise<ApiResponse<Balance>> {
-    return fetch('http://localhost:3005/api/v1/balance', {
-      headers: { ...this.getAuthHeaders() }
-    }).then(res => res.json()).catch(() => ({ error: 'Balance service unavailable' }));
+    return this.request<Balance>(BALANCE_SERVICE_URL, '/balance');
   }
 
   async addMoney(amount: number): Promise<ApiResponse<any>> {
-    return fetch('http://localhost:3005/api/v1/balance/load', {
+    return this.request<any>(BALANCE_SERVICE_URL, '/balance/load', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        ...this.getAuthHeaders() 
-      },
-      body: JSON.stringify({ amount })
-    }).then(res => res.json()).catch(() => ({ error: 'Balance service unavailable' }));
+      body: JSON.stringify({ 
+        amount,
+        description: 'Add money to wallet'
+      })
+    });
   }
 
-  // Transaction Service - Different port
+  // Transaction Service
   async getTransactions(): Promise<ApiResponse<Transaction[]>> {
-    return fetch('http://localhost:3003/api/v1/transactions', {
-      headers: { ...this.getAuthHeaders() }
-    }).then(res => res.json()).catch(() => ({ error: 'Transaction service unavailable' }));
+    return this.request<Transaction[]>(TRANSACTION_SERVICE_URL, '/transactions');
   }
 
   async sendMoney(data: {
@@ -186,14 +186,10 @@ class ApiService {
     vpa: string;
     description: string;
   }): Promise<ApiResponse<Transaction>> {
-    return fetch('http://localhost:3003/api/v1/transactions/upi', {
+    return this.request<Transaction>(TRANSACTION_SERVICE_URL, '/transactions/upi', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        ...this.getAuthHeaders() 
-      },
       body: JSON.stringify(data)
-    }).then(res => res.json()).catch(() => ({ error: 'Transaction service unavailable' }));
+    });
   }
 
   async p2pTransfer(data: {
@@ -201,31 +197,25 @@ class ApiService {
     toUserId: string;
     description: string;
   }): Promise<ApiResponse<Transaction>> {
-    return fetch('http://localhost:3003/api/v1/transactions/p2p', {
+    return this.request<Transaction>(TRANSACTION_SERVICE_URL, '/transactions/p2p', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        ...this.getAuthHeaders() 
-      },
       body: JSON.stringify(data)
-    }).then(res => res.json()).catch(() => ({ error: 'Transaction service unavailable' }));
+    });
   }
 
   // Notification Service
   async sendOTP(phoneNumber: string): Promise<ApiResponse<any>> {
-    return fetch('http://localhost:3004/api/otp/send', {
+    return this.request<any>(NOTIFICATION_SERVICE_URL, '/otp/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phoneNumber })
-    }).then(res => res.json()).catch(() => ({ error: 'Notification service unavailable' }));
+    });
   }
 
   async verifyOTP(phoneNumber: string, otp: string): Promise<ApiResponse<any>> {
-    return fetch('http://localhost:3004/api/otp/verify', {
+    return this.request<any>(NOTIFICATION_SERVICE_URL, '/otp/verify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phoneNumber, otp })
-    }).then(res => res.json()).catch(() => ({ error: 'Notification service unavailable' }));
+    });
   }
 }
 
