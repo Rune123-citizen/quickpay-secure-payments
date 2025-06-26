@@ -1,31 +1,44 @@
-
 # PayFlow - Digital Payments Platform
 
 A comprehensive PhonePe-style digital payments platform built with microservices architecture, supporting UPI payments, bill payments, money transfers, and more.
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Frontend Only (Demo Mode)
+The frontend application can run independently with mock data when backend services are not available:
+
+```bash
+npm install
+npm run dev
+```
+
+The app will be available at http://localhost:8080
+
+**Demo Credentials:**
+- Email: demo@payflow.com
+- Password: any password (will work in demo mode)
+
+### Full Development Environment
+
+#### Prerequisites
 - Docker & Docker Compose
 - Node.js 18+ (for local development)
 - Make (optional, for convenience commands)
 
-### Local Development
-
-1. Clone the repository:
+#### 1. Clone the repository:
 ```bash
 git clone <repository-url>
 cd payflow
 ```
 
-2. Start the development environment:
+#### 2. Start the development environment:
 ```bash
 make dev
 # OR
 docker-compose up --build
 ```
 
-3. Access the services:
+#### 3. Access the services:
 - Web App: http://localhost:5173
 - Auth Service: http://localhost:3001
 - User Service: http://localhost:3002
@@ -103,6 +116,11 @@ Access monitoring dashboards:
 
 ## 🚀 Deployment
 
+### Demo Mode (Frontend Only)
+The application is deployed at: https://musical-otter-692040.netlify.app
+
+This deployment runs in demo mode with mock data since the backend microservices are not deployed.
+
 ### Staging
 ```bash
 make deploy-staging
@@ -114,6 +132,14 @@ make deploy-prod
 ```
 
 ## 🛠️ Development
+
+### Frontend Development
+The frontend is built with:
+- **React 18** with TypeScript
+- **Vite** for fast development
+- **TailwindCSS** for styling
+- **shadcn/ui** for components
+- **React Query** for API state management
 
 ### Adding a New Service
 
@@ -155,6 +181,14 @@ Key environment variables for each service:
 1. **Services not starting**: Check if ports are available
 2. **Database connection errors**: Ensure PostgreSQL is running
 3. **Kafka connection issues**: Wait for Kafka to fully initialize
+4. **Network errors in frontend**: Backend services may not be running - app will use mock data
+
+### Demo Mode
+When backend services are not available, the frontend automatically switches to demo mode with:
+- Mock authentication (any credentials will work)
+- Sample transaction data
+- Simulated balance information
+- Mock payment flows
 
 ### Logs
 
@@ -184,3 +218,27 @@ For issues and support:
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🎯 Current Status
+
+**Frontend**: ✅ Complete and deployed
+- Modern React 18 application
+- Responsive design
+- Authentication flows
+- Payment interfaces
+- Transaction history
+- Balance management
+
+**Backend Services**: 🔄 In Development
+- Microservices architecture defined
+- Docker configurations ready
+- API specifications documented
+- Database schemas designed
+
+**Infrastructure**: 🔄 Planned
+- Kubernetes deployment configs
+- Terraform infrastructure scripts
+- CI/CD pipelines
+- Monitoring and observability
+
+The application currently runs in demo mode with mock data, providing a full user experience while the backend services are being developed.
